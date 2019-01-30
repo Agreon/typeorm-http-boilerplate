@@ -4,9 +4,10 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
         "start": "ts-node src/index.ts",
-        "watch": "nodemon "
+        "build": "tsc",
+        "dev": "nodemon",
+        "prod": "npm run build && npm run start"
     },
     "author": "",
     "license": "ISC",
@@ -24,7 +25,7 @@
         "express": "^4.16.3",
         "jsonwebtoken": "^8.3.0",
         "pg": "^7.3.0",
-        "reflect-metadata": "^0.1.10",
+        "reflect-metadata": "^0.1.13",
         "typeorm": "^0.2.12"
     },
     "devDependencies": {
