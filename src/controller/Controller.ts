@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { validate } from "class-validator";
-import { Entity, getRepository, ObjectType, Repository } from "typeorm";
+import { getRepository, ObjectType, Repository } from "typeorm";
 import { verifyToken } from "../util/auth";
 
 export const Method = {
@@ -22,11 +22,8 @@ export interface IController {
   init: (app: any) => void;
 }
 
-/**
- * TODO: Check for user.id at any request
- */
-export class Controller {
-  protected repository: Repository<ObjectType<any>>; // TODO
+export class Controller<T> {
+  protected repository: Repository<ObjectType<T>>;
 
   private app: any;
   private className: string;
@@ -60,8 +57,12 @@ export class Controller {
   };
 
   public async get(request: Request, response: Response) {
-    const { id } = request.params;
-    const entity = await this.repository.findOne(id);
+    const { id, user } = request.params;
+
+    const entity = await this.repository.findOne(
+      id,
+      user ? { where: { user } } : null
+    );
 
     if (!entity) {
       return response.status(404).end();
@@ -71,13 +72,18 @@ export class Controller {
   }
 
   public async getAll(request: Request, response: Response) {
-    const objects = await this.repository.find();
-    console.log("Not custom");
+    const { user } = request.params;
+    const objects = await this.repository.find(
+      user ? { where: { user } } : null
+    );
     response.send(objects);
   }
 
   public async post(request: Request, response: Response) {
-    const entity = await this.repository.create(request.body);
+    let { body } = request;
+    body.user = request.params.user;
+
+    const entity = await this.repository.create(body);
 
     const errors = await validate(entity);
     if (errors.length > 0) {
@@ -85,28 +91,46 @@ export class Controller {
       return response.status(400).send(errors.map(e => e.constraints));
     }
 
-    await this.repository.save(entity);
+    try {
+      await this.repository.save(entity);
+    } catch (e) {
+      return response.status(400).send(e.message);
+    }
+
     response.status(201).send(entity);
   }
 
-  // TODO: Validate
   public async put(request: Request, response: Response) {
-    const { id } = request.params;
+    const { id, user } = request.params;
     const update = request.body;
-    const existingEntity = await this.repository.findOne(id);
+    const existingEntity = await this.repository.findOne(
+      id,
+      user ? { where: { user } } : null
+    );
 
     if (!existingEntity) {
       return response.status(404).end();
     }
+    // Apply the update
+    this.repository.merge(existingEntity, update);
 
-    await this.repository.update(id, update);
-    const entity = await this.repository.findOne(id);
-    response.send(entity);
+    // Validation
+    const errors = await validate(existingEntity);
+    if (errors.length > 0) {
+      console.log(errors);
+      return response.status(400).send(errors.map(e => e.constraints));
+    }
+
+    await this.repository.save(existingEntity);
+    response.send(existingEntity);
   }
 
   public async delete(request: Request, response: Response) {
-    const { id } = request.params;
-    const existingEntity = await this.repository.findOne(id);
+    const { id, user } = request.params;
+    const existingEntity = await this.repository.findOne(
+      id,
+      user ? { where: { user } } : null
+    );
 
     if (!existingEntity) {
       return response.status(404).end();

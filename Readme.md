@@ -4,10 +4,8 @@
 
 # Installation
 
-- Enter your db-credentials in ormconfig.json
-- Copy .env.dist to .env and enter a JWT-Secret
+- Copy .env.dist to .env and enter a JWT-Secret as well as db-credentials.
 
 # TODO
 
-- Is user set? (auth.ts)
-- Dockerfile
+- protected User-Routes won't work

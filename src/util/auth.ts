@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { getRepository } from "typeorm";
 import * as jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config";
 import { User } from "../entity/User";
@@ -12,21 +13,29 @@ export const verifyToken = (
   response: Response,
   next: () => void
 ) => {
-  const token = request.get("x-access-token");
+  const token = request.get("Authorization");
 
-  if (!token) {
-    return response.status(403).send({ message: "No token provided" });
+  if (!token || !token.split(" ").length) {
+    return response.status(403).send({ message: "No valid token provided" });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+  const tokenData = token.split(" ")[1];
+
+  jwt.verify(tokenData, JWT_SECRET, (err, decoded: { id: string }) => {
     if (err) {
       return response
         .status(500)
         .send({ message: "Failed to authenticate token" });
     }
-    console.log(decoded);
-    /*request.headers['x-user-id'] = decoded.id;
-        request.user = decoded;*/
-    next();
+    getRepository(User)
+      .findOne(parseInt(decoded.id))
+      .then(user => {
+        request.params["user"] = user;
+        next();
+      })
+      .catch(err => {
+        console.log(err);
+        return response.status(403).send({ message: "User not found!" });
+      });
   });
 };
