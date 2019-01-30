@@ -1,9 +1,12 @@
+import * as dotenv from "dotenv";
 import * as bodyParser from "body-parser";
 import * as express from "express";
 import * as cors from "cors";
 import "reflect-metadata";
 import { createConnection } from "typeorm";
 import Controllers from "./controller";
+
+dotenv.config();
 
 const port = process.env.port || 3000;
 

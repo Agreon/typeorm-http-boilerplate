@@ -9,6 +9,5 @@
 
 # TODO
 
-- read .env
 - Is user set? (auth.ts)
 - Dockerfile
